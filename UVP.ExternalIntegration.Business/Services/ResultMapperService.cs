@@ -18,6 +18,7 @@ namespace UVP.ExternalIntegration.Business.Services
         private readonly IGenericRepository<IntegrationInvocationLog> _invocationLogRepo;
         private readonly IResultMappingHandlerFactory _handlerFactory;
         private readonly IResultFieldExtractor _fieldExtractor;
+        private readonly IGenericRepository<DoaCandidate> _doaCandidateRepo;
         private readonly ILogger _logger = Log.ForContext<ResultMapperService>();
 
         public ResultMapperService(
@@ -25,13 +26,15 @@ namespace UVP.ExternalIntegration.Business.Services
             IGenericRepository<DoaCandidateClearancesOneHR> clearancesOneHRRepo,
             IGenericRepository<IntegrationInvocationLog> invocationLogRepo,
             IResultMappingHandlerFactory handlerFactory,
-            IResultFieldExtractor fieldExtractor)
+            IResultFieldExtractor fieldExtractor,
+            IGenericRepository<DoaCandidate> doaCandidateRepo)
         {
             _clearancesRepo = clearancesRepo;
             _clearancesOneHRRepo = clearancesOneHRRepo;
             _invocationLogRepo = invocationLogRepo;
             _handlerFactory = handlerFactory;
             _fieldExtractor = fieldExtractor;
+            _doaCandidateRepo = doaCandidateRepo;
         }
 
         public async Task ProcessResponseAsync(IntegrationInvocation invocation, string response, string integrationType)
@@ -174,6 +177,32 @@ namespace UVP.ExternalIntegration.Business.Services
 
                     if (doaCanId > 0 && candId > 0)
                         return (doaCanId, candId);
+
+
+                    // For EARTHMED: extract from ReferenceNumber (format: DoaId_DoaCandidateId)
+                    var referenceNumber = _fieldExtractor.TryGetStringFromJsonAnyDepth(payload, "ReferenceNumber");
+                    if (!string.IsNullOrWhiteSpace(referenceNumber) && referenceNumber.Contains("_"))
+                    {
+                        var parts = referenceNumber.Split('_');
+                        if (parts.Length == 2 &&
+                            int.TryParse(parts[0], out var doaId) &&
+                            int.TryParse(parts[1], out var doaCandidateId))
+                        {
+
+                            // For EARTHMED, we need to get CandidateId from DoaCandidateClearancesOneHR
+
+                            var candidate = (await _doaCandidateRepo.FindAsync(x => x.DoaId == doaId))
+                            .FirstOrDefault();
+
+                            if (candidate != null)
+                            {
+                                _logger.Information("[EARTHMED] Resolved from ReferenceNumber: DoaId={DoaId}, DoaCandidateId={DoaCandidateId}, CandidateId={CandidateId}",
+                                    doaId, doaCandidateId, candidate.CandidateId);
+                                return (doaCandidateId, candidate.CandidateId);
+                            }
+                        }
+                    }
+
                 }
                 catch (Exception ex)
                 {
