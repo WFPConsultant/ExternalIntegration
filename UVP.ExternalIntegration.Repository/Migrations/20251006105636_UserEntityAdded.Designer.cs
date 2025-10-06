@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UVP.ExternalIntegration.Repository.Context;
 
@@ -11,9 +12,11 @@ using UVP.ExternalIntegration.Repository.Context;
 namespace UVP.ExternalIntegration.Repository.Migrations
 {
     [DbContext(typeof(UVPDbContext))]
-    partial class UVPDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251006105636_UserEntityAdded")]
+    partial class UserEntityAdded
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -72,9 +75,6 @@ namespace UVP.ExternalIntegration.Repository.Migrations
 
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

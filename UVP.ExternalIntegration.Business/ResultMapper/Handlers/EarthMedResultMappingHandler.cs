@@ -94,9 +94,10 @@ namespace UVP.ExternalIntegration.Business.ResultMapper.Handlers
                     return false;
                 }
 
-                _logger.Information("[EARTHMED] STATUS: Id={Id}, Status={Status}, IndexNumber={IndexNumber}",
+                _logger.Information("[EARTHMED] CYCLE 2 - GET_STATUS: Id={Id}, Status={Status}, IndexNumber={IndexNumber}",
                     statusResult.Id, statusResult.ClearanceStatus, statusResult.IndexNumber);
 
+                // Update OneHR record - mark as completed
                 oneHrRecord.RVCaseId = statusResult.Id.ToString();
                 oneHrRecord.IsCompleted = true;
                 oneHrRecord.CompletionDate = statusResult.ClearanceDate ?? DateTime.UtcNow;
@@ -107,6 +108,7 @@ namespace UVP.ExternalIntegration.Business.ResultMapper.Handlers
                 _logger.Information("[EARTHMED] OneHR record updated. RVCaseId={RVCaseId}, IsCompleted=true",
                     oneHrRecord.RVCaseId);
 
+                // Update summary record - mark as DELIVERED and Complete (EARTHMED only has 2 cycles)
                 var summary = (await _clearancesRepo.FindAsync(
                     c => c.DoaCandidateId == oneHrRecord.DoaCandidateId && c.RecruitmentClearanceCode == SystemCode))
                     .OrderByDescending(c => c.RequestedDate)
@@ -114,7 +116,7 @@ namespace UVP.ExternalIntegration.Business.ResultMapper.Handlers
 
                 if (summary != null)
                 {
-                    summary.StatusCode = "CLEARED";
+                    summary.StatusCode = "DELIVERED";  // EARTHMED: Direct to DELIVERED (no ACK cycle)
                     summary.Outcome = "Complete";
                     summary.CompletionDate = statusResult.ClearanceDate ?? DateTime.UtcNow;
                     summary.LinkDetailRemarks = AppendToRemarks(summary.LinkDetailRemarks,
@@ -124,7 +126,7 @@ namespace UVP.ExternalIntegration.Business.ResultMapper.Handlers
                     await _clearancesRepo.UpdateAsync(summary);
                     await _clearancesRepo.SaveChangesAsync();
 
-                    _logger.Information("[EARTHMED] Summary record updated with StatusCode=CLEARED");
+                    _logger.Information("[EARTHMED] CYCLE 2 Complete: StatusCode=DELIVERED, Outcome=Complete (No ACK needed)");
                 }
 
                 return true;
@@ -134,30 +136,75 @@ namespace UVP.ExternalIntegration.Business.ResultMapper.Handlers
                 _logger.Error(ex, "[EARTHMED] Error in HandleStatusResponseAsync");
                 return false;
             }
+            //try
+            //{
+            //    var responseDto = JsonConvert.DeserializeObject<EarthMedGetStatusResponseDto>(context.Response);
+            //    if (responseDto == null || !responseDto.IsSuccess || responseDto.Result == null || !responseDto.Result.Any())
+            //    {
+            //        _logger.Warning("[EARTHMED] GET_CLEARANCE_STATUS: No results or IsSuccess=false");
+            //        return false;
+            //    }
+
+            //    var statusResult = responseDto.Result.FirstOrDefault(r =>
+            //        r.IndexNumber == oneHrRecord.DoaCandidateClearanceId ||
+            //        r.Id.ToString() == oneHrRecord.DoaCandidateClearanceId);
+
+            //    if (statusResult == null)
+            //    {
+            //        _logger.Warning("[EARTHMED] No matching status record found for Id/IndexNumber={Id}",
+            //            oneHrRecord.DoaCandidateClearanceId);
+            //        return false;
+            //    }
+
+            //    _logger.Information("[EARTHMED] STATUS: Id={Id}, Status={Status}, IndexNumber={IndexNumber}",
+            //        statusResult.Id, statusResult.ClearanceStatus, statusResult.IndexNumber);
+
+            //    oneHrRecord.RVCaseId = statusResult.Id.ToString();
+            //    oneHrRecord.IsCompleted = true;
+            //    oneHrRecord.CompletionDate = statusResult.ClearanceDate ?? DateTime.UtcNow;
+
+            //    await _clearancesOneHRRepo.UpdateAsync(oneHrRecord);
+            //    await _clearancesOneHRRepo.SaveChangesAsync();
+
+            //    _logger.Information("[EARTHMED] OneHR record updated. RVCaseId={RVCaseId}, IsCompleted=true",
+            //        oneHrRecord.RVCaseId);
+
+            //    var summary = (await _clearancesRepo.FindAsync(
+            //        c => c.DoaCandidateId == oneHrRecord.DoaCandidateId && c.RecruitmentClearanceCode == SystemCode))
+            //        .OrderByDescending(c => c.RequestedDate)
+            //        .FirstOrDefault();
+
+            //    if (summary != null)
+            //    {
+            //        summary.StatusCode = "CLEARED";
+            //        summary.Outcome = "Complete";
+            //        summary.CompletionDate = statusResult.ClearanceDate ?? DateTime.UtcNow;
+            //        summary.LinkDetailRemarks = AppendToRemarks(summary.LinkDetailRemarks,
+            //            $"ResponseId={statusResult.Id};Status={statusResult.ClearanceStatus}");
+            //        summary.UpdatedDate = DateTime.UtcNow;
+
+            //        await _clearancesRepo.UpdateAsync(summary);
+            //        await _clearancesRepo.SaveChangesAsync();
+
+            //        _logger.Information("[EARTHMED] Summary record updated with StatusCode=CLEARED");
+            //    }
+
+            //    return true;
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logger.Error(ex, "[EARTHMED] Error in HandleStatusResponseAsync");
+            //    return false;
+            //}
         }
 
         public override async Task<bool> HandleAcknowledgeResponseAsync(ResultMappingContext context, ResultMappingFields fields, DoaCandidateClearancesOneHR oneHrRecord)
         {
             try
             {
-                _logger.Information("[EARTHMED] CYCLE 3 - ACKNOWLEDGE");
+                _logger.Warning("[EARTHMED] ACKNOWLEDGE_RESPONSE called - EARTHMED only has 2 cycles, this should not happen");
 
-                var clearances = (await _clearancesRepo.FindAsync(
-                    c => c.DoaCandidateId == context.DoaCandidateId && c.RecruitmentClearanceCode == SystemCode))
-                    .FirstOrDefault();
-
-                if (clearances != null)
-                {
-                    clearances.StatusCode = "DELIVERED";
-                    clearances.UpdatedDate = DateTime.UtcNow;
-                    clearances.AdditionalRemarks = AppendToRemarks(clearances.AdditionalRemarks,
-                        "Acknowledgement posted");
-                    await _clearancesRepo.UpdateAsync(clearances);
-                    await _clearancesRepo.SaveChangesAsync();
-
-                    _logger.Information("[EARTHMED] CYCLE 3 Complete: StatusCode=DELIVERED");
-                }
-
+                // EARTHMED doesn't have a 3rd cycle - everything is completed in HandleStatusResponseAsync
                 return true;
             }
             catch (Exception ex)
@@ -165,6 +212,33 @@ namespace UVP.ExternalIntegration.Business.ResultMapper.Handlers
                 _logger.Error(ex, "[EARTHMED] Error in HandleAcknowledgeResponseAsync");
                 return false;
             }
+            //try
+            //{
+            //    _logger.Information("[EARTHMED] CYCLE 3 - ACKNOWLEDGE");
+
+            //    var clearances = (await _clearancesRepo.FindAsync(
+            //        c => c.DoaCandidateId == context.DoaCandidateId && c.RecruitmentClearanceCode == SystemCode))
+            //        .FirstOrDefault();
+
+            //    if (clearances != null)
+            //    {
+            //        clearances.StatusCode = "DELIVERED";
+            //        clearances.UpdatedDate = DateTime.UtcNow;
+            //        clearances.AdditionalRemarks = AppendToRemarks(clearances.AdditionalRemarks,
+            //            "Acknowledgement posted");
+            //        await _clearancesRepo.UpdateAsync(clearances);
+            //        await _clearancesRepo.SaveChangesAsync();
+
+            //        _logger.Information("[EARTHMED] CYCLE 3 Complete: StatusCode=DELIVERED");
+            //    }
+
+            //    return true;
+            //}
+            //catch (Exception ex)
+            //{
+            //    _logger.Error(ex, "[EARTHMED] Error in HandleAcknowledgeResponseAsync");
+            //    return false;
+            //}
         }
     }
 }

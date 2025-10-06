@@ -33,6 +33,7 @@
         public string? FunctionalTitleDescription { get; set; }
         public string? NationalityCode { get; set; }
         public string EmailAddress { get; set; } = string.Empty;
+        public int UserId {  get; set; }
     }
 
     public class DoaCandidateIntegrationModel

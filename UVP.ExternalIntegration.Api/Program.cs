@@ -80,6 +80,7 @@ try
     builder.Services.AddScoped<IGenericRepository<DoaCandidateClearancesOneHR>, GenericRepository<DoaCandidateClearancesOneHR>>();
     builder.Services.AddScoped<IGenericRepository<Doa>, GenericRepository<Doa>>();
     builder.Services.AddScoped<IStatusPollingService, StatusPollingService>();
+    builder.Services.AddScoped<IGenericRepository<User>, GenericRepository<User>>();
 
     builder.Services.AddScoped<IModelLoaderService, ModelLoaderService>();
 
@@ -192,7 +193,7 @@ try
     RecurringJob.AddOrUpdate<IStatusPollingService>(
         "uvp-poll-clearances",
         service => service.ProcessOpenClearancesAsync(),
-        "0 */5 * * * *");
+        "0 */2 * * * *");
     RecurringJob.AddOrUpdate<IStatusPollingService>(
         "uvp-poll-acks",
         service => service.ProcessAcknowledgeAsync(),

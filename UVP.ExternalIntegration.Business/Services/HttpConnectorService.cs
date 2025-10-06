@@ -43,7 +43,7 @@ namespace UVP.ExternalIntegration.Business.Services
 
             try
             {
-                // (kept) Mock base override via env var
+                //// (kept) Mock base override via env var
                 //var baseUrlOverride = Environment.GetEnvironmentVariable("CMTS_BASEURL");
 
                 //if (!string.IsNullOrWhiteSpace(baseUrlOverride))
@@ -59,7 +59,7 @@ namespace UVP.ExternalIntegration.Business.Services
                 //        request.Url = new Uri(new Uri(baseUrlOverride, UriKind.Absolute), request.Url).ToString();
                 //    }
                 //}
-                // END kept
+                //// END kept
                 _logger.Information("Sending {Method} request to {Url}", request.Method, request.Url);
 
                 if (!string.IsNullOrEmpty(request.Payload))
