@@ -51,31 +51,31 @@ namespace UVP.ExternalIntegration.Api.Controllers
             }
         }
 
-        [HttpPost("clearance/check-progress")]
-        public async Task<IActionResult> CheckAndProgressClearance([FromBody] IntegrationRequestDto request)
-        {
-            try
-            {
-                var result = await _orchestrationService.CheckAndProgressClearanceAsync(
-                    request.DoaCandidateId,
-                    request.CandidateId,
-                    request.IntegrationType);
+        //[HttpPost("clearance/check-progress")]
+        //public async Task<IActionResult> CheckAndProgressClearance([FromBody] IntegrationRequestDto request)
+        //{
+        //    try
+        //    {
+        //        var result = await _orchestrationService.CheckAndProgressClearanceAsync(
+        //            request.DoaCandidateId,
+        //            request.CandidateId,
+        //            request.IntegrationType);
 
-                return Ok(new
-                {
-                    Success = result,
-                    Message = "Clearance progress checked"
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error checking clearance progress");
-                return BadRequest(new
-                {
-                    Success = false,
-                    Error = ex.Message
-                });
-            }
-        }
+        //        return Ok(new
+        //        {
+        //            Success = result,
+        //            Message = "Clearance progress checked"
+        //        });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error checking clearance progress");
+        //        return BadRequest(new
+        //        {
+        //            Success = false,
+        //            Error = ex.Message
+        //        });
+        //    }
+        //}
     }
 }

@@ -182,25 +182,19 @@ try
     service => service.ProcessPendingInvocationsAsync(),
     "0 */5 * * * *"); // at second 0, every 5 minutes
 
-    //RecurringJob.AddOrUpdate<IInvocationManagerService>(
-    //    "process-retryable-invocations",
-    //    service => service.ProcessRetryableInvocationsAsync(),
-    //    "0 */5 * * * *");  // at second 0, every 5 minutes
     RecurringJob.AddOrUpdate<IInvocationManagerService>(
    "process-retryable-invocations",
    service => service.ProcessRetryableInvocationsAsync(),
-   "0 */5 * * * *");
+   "0 */10 * * * *");
     RecurringJob.AddOrUpdate<IStatusPollingService>(
         "uvp-poll-clearances",
         service => service.ProcessOpenClearancesAsync(),
-        "0 */2 * * * *");
-    RecurringJob.AddOrUpdate<IStatusPollingService>(
-        "uvp-poll-acks",
-        service => service.ProcessAcknowledgeAsync(),
-        "0 */5 * * * *"); // every 5 minutes at second 15 (staggered)
-                          // at second 0, every 5 minutes
-                          // at second 0, every 5 minutes
-
+        "0 */30 * * * *");
+    //RecurringJob.AddOrUpdate<IStatusPollingService>(
+    //    "uvp-poll-acks",
+    //    service => service.ProcessAcknowledgeAsync(),
+    //    "0 */10 * * * *");
+    
     app.MapControllers();
 
     Log.Information("Application started successfully");

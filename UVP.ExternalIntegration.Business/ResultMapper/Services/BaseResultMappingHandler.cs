@@ -84,17 +84,21 @@ namespace UVP.ExternalIntegration.Business.ResultMapper.Services
 
             return true;
         }
-
-        public virtual async Task<bool> HandleStatusResponseAsync(ResultMappingContext context, ResultMappingFields fields, DoaCandidateClearancesOneHR oneHrRecord)
+        public virtual async Task<bool> HandleStatusResponseAsync(ResultMappingContext context, ResultMappingFields fields, DoaCandidateClearancesOneHR? oneHrRecord)
         {
+            // Null check for oneHrRecord - required for EARTHMED which processes multiple results
+            if (oneHrRecord == null)
+            {
+                _logger.Warning("[{System}] HandleStatusResponseAsync called with null oneHrRecord", SystemCode);
+                return false;
+            }
+
             _logger.Information("[{System}] STATUS: Doa={DoaId}, Cand={CandId}, ClearanceId={ClearanceId}, RespId={RespId}, Status={Status}",
                 SystemCode, oneHrRecord.DoaCandidateId, oneHrRecord.CandidateId, oneHrRecord.DoaCandidateClearanceId,
                 fields.ResponseId ?? "n/a", fields.StatusLabel ?? fields.StatusCode?.ToString() ?? "n/a");
 
             // Log the original RVCaseId for comparison
             var originalRVCaseId = oneHrRecord.RVCaseId;
-            //if(originalRVCaseId!=null)
-            //    fields.ResponseId = originalRVCaseId;
 
             // Update OneHR record with RVCaseId from ResponseId
             if (!string.IsNullOrWhiteSpace(fields.ResponseId))
@@ -159,6 +163,80 @@ namespace UVP.ExternalIntegration.Business.ResultMapper.Services
 
             return true;
         }
+        //public virtual async Task<bool> HandleStatusResponseAsync(ResultMappingContext context, ResultMappingFields fields, DoaCandidateClearancesOneHR oneHrRecord)
+        //{
+        //    _logger.Information("[{System}] STATUS: Doa={DoaId}, Cand={CandId}, ClearanceId={ClearanceId}, RespId={RespId}, Status={Status}",
+        //        SystemCode, oneHrRecord.DoaCandidateId, oneHrRecord.CandidateId, oneHrRecord.DoaCandidateClearanceId,
+        //        fields.ResponseId ?? "n/a", fields.StatusLabel ?? fields.StatusCode?.ToString() ?? "n/a");
+
+        //    // Log the original RVCaseId for comparison
+        //    var originalRVCaseId = oneHrRecord.RVCaseId;
+        //    //if(originalRVCaseId!=null)
+        //    //    fields.ResponseId = originalRVCaseId;
+
+        //    // Update OneHR record with RVCaseId from ResponseId
+        //    if (!string.IsNullOrWhiteSpace(fields.ResponseId))
+        //    {
+        //        oneHrRecord.RVCaseId = fields.ResponseId;
+        //        _logger.Information("[{System}] Setting RVCaseId: '{OldValue}' -> '{NewValue}'",
+        //            SystemCode, originalRVCaseId ?? "null", fields.ResponseId);
+        //    }
+        //    else
+        //    {
+        //        _logger.Warning("[{System}] ResponseId is null/empty - RVCaseId will not be updated. Current RVCaseId: '{CurrentValue}'",
+        //            SystemCode, originalRVCaseId ?? "null");
+
+        //        // Log the raw response for debugging
+        //        _logger.Warning("[{System}] Raw response for debugging: {Response}",
+        //            SystemCode, context.Response.Length > 2000 ? context.Response.Substring(0, 2000) + "..." : context.Response);
+        //    }
+
+        //    oneHrRecord.IsCompleted = true;
+        //    oneHrRecord.CompletionDate = fields.StatusDate ?? DateTime.UtcNow;
+
+        //    try
+        //    {
+        //        await _clearancesOneHRRepo.UpdateAsync(oneHrRecord);
+        //        await _clearancesOneHRRepo.SaveChangesAsync();
+
+        //        _logger.Information("[{System}] OneHR record updated successfully. Final RVCaseId: '{RVCaseId}', IsCompleted: {IsCompleted}",
+        //            SystemCode, oneHrRecord.RVCaseId ?? "null", oneHrRecord.IsCompleted);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.Error(ex, "[{System}] Failed to update OneHR record for DoaCandidateId: {DoaId}",
+        //            SystemCode, oneHrRecord.DoaCandidateId);
+        //        throw;
+        //    }
+
+        //    // Update summary row
+        //    var summary = (await _clearancesRepo.FindAsync(
+        //        c => c.DoaCandidateId == oneHrRecord.DoaCandidateId && c.RecruitmentClearanceCode == SystemCode))
+        //        .OrderByDescending(c => c.RequestedDate)
+        //        .FirstOrDefault();
+
+        //    if (summary != null)
+        //    {
+        //        summary.StatusCode = "CLEARED";
+        //        summary.Outcome = "Complete";
+        //        summary.CompletionDate = fields.StatusDate ?? DateTime.UtcNow;
+        //        if (!string.IsNullOrWhiteSpace(fields.ResponseId))
+        //            summary.LinkDetailRemarks = AppendToRemarks(summary.LinkDetailRemarks, $"clearanceResponseId={fields.ResponseId}");
+        //        summary.UpdatedDate = DateTime.UtcNow;
+
+        //        await _clearancesRepo.UpdateAsync(summary);
+        //        await _clearancesRepo.SaveChangesAsync();
+
+        //        _logger.Information("[{System}] Summary record updated with StatusCode=CLEARED", SystemCode);
+
+        //    }
+        //    else
+        //    {
+        //        _logger.Warning("[{System}] Summary row not found for DoaCandidateId={DoaId}", SystemCode, oneHrRecord.DoaCandidateId);
+        //    }
+
+        //    return true;
+        //}
 
         protected string AppendToRemarks(string? existingRemarks, string newRemark)
         {

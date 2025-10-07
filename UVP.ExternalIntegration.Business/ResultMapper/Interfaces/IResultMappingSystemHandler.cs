@@ -10,9 +10,14 @@ namespace UVP.ExternalIntegration.Business.ResultMapper.Interfaces
 {
     public interface IResultMappingSystemHandler
     {
+        //string SystemCode { get; }
+        //Task<bool> HandleCreateClearanceRequestAsync(ResultMappingContext context, ResultMappingFields fields);
+        //Task<bool> HandleAcknowledgeResponseAsync(ResultMappingContext context, ResultMappingFields fields, DoaCandidateClearancesOneHR oneHrRecord);
+        //Task<bool> HandleStatusResponseAsync(ResultMappingContext context, ResultMappingFields fields, DoaCandidateClearancesOneHR oneHrRecord);
+
         string SystemCode { get; }
         Task<bool> HandleCreateClearanceRequestAsync(ResultMappingContext context, ResultMappingFields fields);
         Task<bool> HandleAcknowledgeResponseAsync(ResultMappingContext context, ResultMappingFields fields, DoaCandidateClearancesOneHR oneHrRecord);
-        Task<bool> HandleStatusResponseAsync(ResultMappingContext context, ResultMappingFields fields, DoaCandidateClearancesOneHR oneHrRecord);
+        Task<bool> HandleStatusResponseAsync(ResultMappingContext context, ResultMappingFields fields, DoaCandidateClearancesOneHR? oneHrRecord);
     }
 }

@@ -44,8 +44,8 @@ namespace UVP.ExternalIntegration.Business.Services
             try
             {
                 //// (kept) Mock base override via env var
-                //var baseUrlOverride = Environment.GetEnvironmentVariable("CMTS_BASEURL");
-
+                ////var baseUrlOverride = Environment.GetEnvironmentVariable("CMTS_BASEURL");
+                //var baseUrlOverride = Environment.GetEnvironmentVariable("EARTHMED_BASEURL");
                 //if (!string.IsNullOrWhiteSpace(baseUrlOverride))
                 //{
                 //    if (Uri.TryCreate(request.Url, UriKind.Absolute, out var abs))

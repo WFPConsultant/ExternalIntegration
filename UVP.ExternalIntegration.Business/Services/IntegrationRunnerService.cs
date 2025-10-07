@@ -99,40 +99,7 @@ namespace UVP.ExternalIntegration.Business.Services
                 var methodUpper = endpoint.HttpMethod?.ToUpperInvariant();
                 if ((methodUpper == "POST" || methodUpper == "PUT" || methodUpper == "GET") && !string.IsNullOrEmpty(endpoint.PayloadModelMapper))
                 {
-                    payload = await _renderingEngine.RenderPayloadAsync(endpoint.PayloadModelMapper, model);
-                    //ReferenceNumber
-                    //EmailAddress
-                    //SequenceNumber
-                    //ClearanceType
-                    //RequestDate
-                    //DutyStationCode
-                    //DestinationDutyStationDescription
-                    //StartDate
-                    //payload = @"{
-                    //            ""ClearanceType"": ""PE"",
-                    //            ""DateOfBirth"": ""1996-07-30"",
-                    //            ""DestinationDutyStationCode"": ""1620"",
-                    //            ""DestinationDutyStationDescription"": ""Accra"",
-                    //            ""DutyStationCode"": ""1620"",
-                    //            ""DutyStationDescription"": ""Accra"",
-                    //            ""EmailAddress"": ""abenacoding@gmail.com"",
-                    //            ""EmployeeType"": ""NVOL"",
-                    //            ""EndDate"": ""2027-09-25"",
-                    //            ""FirstName"": ""Henrietta"",
-                    //            ""FunctionalTitleCode"": """",
-                    //            ""FunctionalTitleDescription"": ""Nutrition Officer"",
-                    //            ""Gender"": ""F"",
-                    //            ""IndexNumber"": ""5492085"",
-                    //            ""LastName"": ""Ampofo"",
-                    //            ""MiddleName"": """",
-                    //            ""NationalityCode"": ""GH"",
-                    //            ""Organization"": ""UNV"",
-                    //            ""ReferenceNumber"": ""1_555781"",
-                    //            ""RequestDate"": ""2025-09-25"",
-                    //            ""RequestStatus"": """",
-                    //            ""SequenceNumber"": ""1"",
-                    //            ""StartDate"": ""2025-09-24""
-                    //        }";//1783784901981440_1784888883229357
+                    payload = await _renderingEngine.RenderPayloadAsync(endpoint.PayloadModelMapper, model);                    
                 }
 
                 // Logging sequence

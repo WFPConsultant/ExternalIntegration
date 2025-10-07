@@ -115,80 +115,59 @@ namespace UVP.ExternalIntegration.Business.Services
                 return false;
             }
 
-            DoaCandidateClearancesOneHR? oneHr = null;
-
-            // EARTHMED-specific logic: Extract from ReferenceNumber (DoaId_DoaCandidateId)
+            // EARTHMED-specific logic: Process all results in the response
             if (systemCode.Equals(IntegrationType.EARTHMED.ToString(), StringComparison.OrdinalIgnoreCase))
             {
-                var referenceNumber = _fieldExtractor.TryGetStringFromJsonAnyDepth(latestReqPayload,
-                    "ReferenceNumber", "referenceNumber", "data.ReferenceNumber", "payload.ReferenceNumber");
+                _logger.Information("[{System}] Processing EARTHMED status response with multiple results", systemCode);
 
-                if (!string.IsNullOrWhiteSpace(referenceNumber) && referenceNumber.Contains("_"))
+                // For EARTHMED, we process all results in the response
+                // The handler will match each result against DoaCandidateClearancesOneHR by IndexNumber (CandidateId)
+
+                // Create a minimal context - the handler will process all results
+                var earthMedContext = new ResultMappingContext
                 {
-                    var parts = referenceNumber.Split('_');
-                    if (parts.Length == 2 &&
-                        int.TryParse(parts[0], out var doaId) &&
-                        int.TryParse(parts[1], out var doaCandidateId))
-                    {
-                        _logger.Information("[{System}] Extracted from ReferenceNumber: DoaId={DoaId}, DoaCandidateId={DoaCandidateId}",
-                            systemCode, doaId, doaCandidateId);
+                    DoaCandidateId = 0, // Will be determined per result in the handler
+                    CandidateId = 0,    // Will be determined per result in the handler
+                    IntegrationType = systemCode,
+                    Operation = IntegrationOperation.GET_CLEARANCE_STATUS.ToString(),
+                    Response = response,
+                    IntegrationInvocationId = invocation.IntegrationInvocationId
+                };
 
-                        // For EARTHMED, query by DoaCandidateId (we only have DoaCandidateClearanceId in OneHR)
-                        oneHr = (await _clearancesOneHRRepo.FindAsync(o => o.DoaCandidateId == doaCandidateId))
-                                .OrderByDescending(o => o.RequestedDate)
-                                .FirstOrDefault();
-
-                        if (oneHr == null)
-                        {
-                            _logger.Warning("[{System}] OneHR row not found for DoaCandidateId={DoaCandidateId}",
-                                systemCode, doaCandidateId);
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        _logger.Warning("[{System}] Invalid ReferenceNumber format: {ReferenceNumber}",
-                            systemCode, referenceNumber);
-                        return false;
-                    }
-                }
-                else
-                {
-                    _logger.Warning("[{System}] Could not extract ReferenceNumber from request payload. Invocation {Id}",
-                        systemCode, invocation.IntegrationInvocationId);
-                    return false;
-                }
+                // Pass null for fields and oneHrRecord - EARTHMED handler processes all results internally
+                return await handler.HandleStatusResponseAsync(earthMedContext, null, null);
             }
-            else // CMTS and other systems
+
+            // CMTS and other systems - existing logic
+            DoaCandidateClearancesOneHR? oneHr = null;
+
+            var clearanceId_rvcaseId = _fieldExtractor.TryGetStringFromJsonAnyDepth(latestReqPayload,
+                "id", "clearanceId", "clearanceRequestId", "requestId", "data.id", "payload.id");
+
+            if (string.IsNullOrWhiteSpace(clearanceId_rvcaseId))
             {
-                var clearanceId_rvcaseId = _fieldExtractor.TryGetStringFromJsonAnyDepth(latestReqPayload,
-                    "id", "clearanceId", "clearanceRequestId", "requestId", "data.id", "payload.id");
+                _logger.Warning("[{System}] Could not extract clearanceId from status request payload. Invocation {Id}",
+                    systemCode, invocation.IntegrationInvocationId);
+                return false;
+            }
 
-                if (string.IsNullOrWhiteSpace(clearanceId_rvcaseId))
-                {
-                    _logger.Warning("[{System}] Could not extract clearanceId from status request payload. Invocation {Id}",
-                        systemCode, invocation.IntegrationInvocationId);
-                    return false;
-                }
+            // Locate OneHR link row by clearanceId
+            oneHr = (await _clearancesOneHRRepo.FindAsync(o => o.DoaCandidateClearanceId == clearanceId_rvcaseId))
+                        .OrderByDescending(o => o.RequestedDate)
+                        .FirstOrDefault();
 
-                // Locate OneHR link row by clearanceId
-                oneHr = (await _clearancesOneHRRepo.FindAsync(o => o.DoaCandidateClearanceId == clearanceId_rvcaseId))
-                            .OrderByDescending(o => o.RequestedDate)
-                            .FirstOrDefault();
+            if (oneHr == null)
+            {
+                oneHr = (await _clearancesOneHRRepo.FindAsync(o => o.RVCaseId == clearanceId_rvcaseId))
+                        .OrderByDescending(o => o.RequestedDate)
+                        .FirstOrDefault();
+            }
 
-                if (oneHr == null)
-                {
-                    oneHr = (await _clearancesOneHRRepo.FindAsync(o => o.RVCaseId == clearanceId_rvcaseId))
-                            .OrderByDescending(o => o.RequestedDate)
-                            .FirstOrDefault();
-                }
-
-                if (oneHr == null)
-                {
-                    _logger.Warning("[{System}] OneHR row not found for clearanceId={ClearanceId}",
-                        systemCode, clearanceId_rvcaseId);
-                    return false;
-                }
+            if (oneHr == null)
+            {
+                _logger.Warning("[{System}] OneHR row not found for clearanceId={ClearanceId}",
+                    systemCode, clearanceId_rvcaseId);
+                return false;
             }
 
             // Use system-specific field extraction for status responses
@@ -209,60 +188,168 @@ namespace UVP.ExternalIntegration.Business.Services
             return response == null
                     ? await handler.HandleAcknowledgeResponseAsync(context, fields, oneHr)
                     : await handler.HandleStatusResponseAsync(context, fields, oneHr);
-            //var systemCode = handler.SystemCode;
-
-            //// Find clearanceId from the CURRENT (status) request payload
-            //var latestReqPayload = await GetLatestRequestPayloadAsync(invocation.IntegrationInvocationId);
-            //if (latestReqPayload == null)
-            //{
-            //    _logger.Warning("[{System}] No latest REQUEST payload found for status invocation {Id}", systemCode, invocation.IntegrationInvocationId);
-            //    return false;
-            //}
-
-            //var clearanceId_rvcaseId = _fieldExtractor.TryGetStringFromJsonAnyDepth(latestReqPayload,
-            //    "id", "clearanceId", "clearanceRequestId", "requestId", "data.id", "payload.id");
-
-            //if (string.IsNullOrWhiteSpace(clearanceId_rvcaseId))
-            //{
-            //    _logger.Warning("[{System}] Could not extract clearanceId from status request payload. Invocation {Id}", systemCode, invocation.IntegrationInvocationId);
-            //    return false;
-            //}
-
-            //// Locate OneHR link row by clearanceId
-            //var oneHr = (await _clearancesOneHRRepo.FindAsync(o => o.DoaCandidateClearanceId == clearanceId_rvcaseId))
-            //            .OrderByDescending(o => o.RequestedDate)
-            //            .FirstOrDefault();
-
-            //if (oneHr == null)
-            //{
-            //    oneHr = (await _clearancesOneHRRepo.FindAsync(o => o.RVCaseId == clearanceId_rvcaseId))
-            //            .OrderByDescending(o => o.RequestedDate)
-            //            .FirstOrDefault();
-            //}
-            //if (oneHr == null) //if oneHr still null, log and exit
-            //{
-            //    _logger.Warning("[{System}] OneHR row not found for clearanceId={ClearanceId}", systemCode, clearanceId_rvcaseId);
-            //    return false;
-            //}
-
-            //// Use system-specific field extraction for status responses
-            //var fields = _fieldExtractor.ExtractResponseFields(response, systemCode);
-
-            //var context = new ResultMappingContext
-            //{
-            //    DoaCandidateId = oneHr.DoaCandidateId,
-            //    CandidateId = oneHr.CandidateId,
-            //    IntegrationType = systemCode,
-            //    Operation = response == null ? IntegrationOperation.ACKNOWLEDGE_RESPONSE.ToString() : IntegrationOperation.GET_CLEARANCE_STATUS.ToString(),//"GET_CLEARANCE_STATUS",
-            //    Response = response,
-            //    IntegrationInvocationId = invocation.IntegrationInvocationId
-            //};
-
-            ////return await handler.HandleStatusResponseAsync(context, fields, oneHr);
-            //return response == null
-            //        ? await handler.HandleAcknowledgeResponseAsync(context, fields, oneHr)
-            //        : await handler.HandleStatusResponseAsync(context, fields, oneHr);
         }
+
+        //private async Task<bool> ProcessStatusForSystemAsync(IResultMappingSystemHandler handler, IntegrationInvocation invocation, string response)
+        //{
+        //    var systemCode = handler.SystemCode;
+
+        //    // Find clearanceId from the CURRENT (status) request payload
+        //    var latestReqPayload = await GetLatestRequestPayloadAsync(invocation.IntegrationInvocationId);
+        //    if (latestReqPayload == null)
+        //    {
+        //        _logger.Warning("[{System}] No latest REQUEST payload found for status invocation {Id}", systemCode, invocation.IntegrationInvocationId);
+        //        return false;
+        //    }
+
+        //    DoaCandidateClearancesOneHR? oneHr = null;
+
+        //    // EARTHMED-specific logic: Extract from ReferenceNumber (DoaId_DoaCandidateId)
+        //    if (systemCode.Equals(IntegrationType.EARTHMED.ToString(), StringComparison.OrdinalIgnoreCase))
+        //    {
+        //        var referenceNumber = _fieldExtractor.TryGetStringFromJsonAnyDepth(latestReqPayload,
+        //            "ReferenceNumber", "referenceNumber", "data.ReferenceNumber", "payload.ReferenceNumber");
+
+        //        if (!string.IsNullOrWhiteSpace(referenceNumber) && referenceNumber.Contains("_"))
+        //        {
+        //            var parts = referenceNumber.Split('_');
+        //            if (parts.Length == 2 &&
+        //                int.TryParse(parts[0], out var doaId) &&
+        //                int.TryParse(parts[1], out var doaCandidateId))
+        //            {
+        //                _logger.Information("[{System}] Extracted from ReferenceNumber: DoaId={DoaId}, DoaCandidateId={DoaCandidateId}",
+        //                    systemCode, doaId, doaCandidateId);
+
+        //                // For EARTHMED, query by DoaCandidateId (we only have DoaCandidateClearanceId in OneHR)
+        //                oneHr = (await _clearancesOneHRRepo.FindAsync(o => o.DoaCandidateId == doaCandidateId))
+        //                        .OrderByDescending(o => o.RequestedDate)
+        //                        .FirstOrDefault();
+
+        //                if (oneHr == null)
+        //                {
+        //                    _logger.Warning("[{System}] OneHR row not found for DoaCandidateId={DoaCandidateId}",
+        //                        systemCode, doaCandidateId);
+        //                    return false;
+        //                }
+        //            }
+        //            else
+        //            {
+        //                _logger.Warning("[{System}] Invalid ReferenceNumber format: {ReferenceNumber}",
+        //                    systemCode, referenceNumber);
+        //                return false;
+        //            }
+        //        }
+        //        else
+        //        {
+        //            _logger.Warning("[{System}] Could not extract ReferenceNumber from request payload. Invocation {Id}",
+        //                systemCode, invocation.IntegrationInvocationId);
+        //            return false;
+        //        }
+        //    }
+        //    else // CMTS and other systems
+        //    {
+        //        var clearanceId_rvcaseId = _fieldExtractor.TryGetStringFromJsonAnyDepth(latestReqPayload,
+        //            "id", "clearanceId", "clearanceRequestId", "requestId", "data.id", "payload.id");
+
+        //        if (string.IsNullOrWhiteSpace(clearanceId_rvcaseId))
+        //        {
+        //            _logger.Warning("[{System}] Could not extract clearanceId from status request payload. Invocation {Id}",
+        //                systemCode, invocation.IntegrationInvocationId);
+        //            return false;
+        //        }
+
+        //        // Locate OneHR link row by clearanceId
+        //        oneHr = (await _clearancesOneHRRepo.FindAsync(o => o.DoaCandidateClearanceId == clearanceId_rvcaseId))
+        //                    .OrderByDescending(o => o.RequestedDate)
+        //                    .FirstOrDefault();
+
+        //        if (oneHr == null)
+        //        {
+        //            oneHr = (await _clearancesOneHRRepo.FindAsync(o => o.RVCaseId == clearanceId_rvcaseId))
+        //                    .OrderByDescending(o => o.RequestedDate)
+        //                    .FirstOrDefault();
+        //        }
+
+        //        if (oneHr == null)
+        //        {
+        //            _logger.Warning("[{System}] OneHR row not found for clearanceId={ClearanceId}",
+        //                systemCode, clearanceId_rvcaseId);
+        //            return false;
+        //        }
+        //    }
+
+        //    // Use system-specific field extraction for status responses
+        //    var fields = _fieldExtractor.ExtractResponseFields(response, systemCode);
+
+        //    var context = new ResultMappingContext
+        //    {
+        //        DoaCandidateId = oneHr.DoaCandidateId,
+        //        CandidateId = oneHr.CandidateId,
+        //        IntegrationType = systemCode,
+        //        Operation = response == null
+        //            ? IntegrationOperation.ACKNOWLEDGE_RESPONSE.ToString()
+        //            : IntegrationOperation.GET_CLEARANCE_STATUS.ToString(),
+        //        Response = response,
+        //        IntegrationInvocationId = invocation.IntegrationInvocationId
+        //    };
+
+        //    return response == null
+        //            ? await handler.HandleAcknowledgeResponseAsync(context, fields, oneHr)
+        //            : await handler.HandleStatusResponseAsync(context, fields, oneHr);
+        //    //var systemCode = handler.SystemCode;
+
+        //    //// Find clearanceId from the CURRENT (status) request payload
+        //    //var latestReqPayload = await GetLatestRequestPayloadAsync(invocation.IntegrationInvocationId);
+        //    //if (latestReqPayload == null)
+        //    //{
+        //    //    _logger.Warning("[{System}] No latest REQUEST payload found for status invocation {Id}", systemCode, invocation.IntegrationInvocationId);
+        //    //    return false;
+        //    //}
+
+        //    //var clearanceId_rvcaseId = _fieldExtractor.TryGetStringFromJsonAnyDepth(latestReqPayload,
+        //    //    "id", "clearanceId", "clearanceRequestId", "requestId", "data.id", "payload.id");
+
+        //    //if (string.IsNullOrWhiteSpace(clearanceId_rvcaseId))
+        //    //{
+        //    //    _logger.Warning("[{System}] Could not extract clearanceId from status request payload. Invocation {Id}", systemCode, invocation.IntegrationInvocationId);
+        //    //    return false;
+        //    //}
+
+        //    //// Locate OneHR link row by clearanceId
+        //    //var oneHr = (await _clearancesOneHRRepo.FindAsync(o => o.DoaCandidateClearanceId == clearanceId_rvcaseId))
+        //    //            .OrderByDescending(o => o.RequestedDate)
+        //    //            .FirstOrDefault();
+
+        //    //if (oneHr == null)
+        //    //{
+        //    //    oneHr = (await _clearancesOneHRRepo.FindAsync(o => o.RVCaseId == clearanceId_rvcaseId))
+        //    //            .OrderByDescending(o => o.RequestedDate)
+        //    //            .FirstOrDefault();
+        //    //}
+        //    //if (oneHr == null) //if oneHr still null, log and exit
+        //    //{
+        //    //    _logger.Warning("[{System}] OneHR row not found for clearanceId={ClearanceId}", systemCode, clearanceId_rvcaseId);
+        //    //    return false;
+        //    //}
+
+        //    //// Use system-specific field extraction for status responses
+        //    //var fields = _fieldExtractor.ExtractResponseFields(response, systemCode);
+
+        //    //var context = new ResultMappingContext
+        //    //{
+        //    //    DoaCandidateId = oneHr.DoaCandidateId,
+        //    //    CandidateId = oneHr.CandidateId,
+        //    //    IntegrationType = systemCode,
+        //    //    Operation = response == null ? IntegrationOperation.ACKNOWLEDGE_RESPONSE.ToString() : IntegrationOperation.GET_CLEARANCE_STATUS.ToString(),//"GET_CLEARANCE_STATUS",
+        //    //    Response = response,
+        //    //    IntegrationInvocationId = invocation.IntegrationInvocationId
+        //    //};
+
+        //    ////return await handler.HandleStatusResponseAsync(context, fields, oneHr);
+        //    //return response == null
+        //    //        ? await handler.HandleAcknowledgeResponseAsync(context, fields, oneHr)
+        //    //        : await handler.HandleStatusResponseAsync(context, fields, oneHr);
+        //}
 
         private async Task<(int doaCandidateId, int candidateId)> ResolveIdsFromFirstRequestAsync(IntegrationInvocation invocation)
         {

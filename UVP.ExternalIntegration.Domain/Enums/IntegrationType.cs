@@ -3,8 +3,8 @@
     public enum IntegrationType
     {
         CMTS,
-        CDS,
-        CLEARCHECK,
+        //CDS,
+        //CLEARCHECK,
         EARTHMED
     }
 }
