@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using UVP.ExternalIntegration.Business.Interfaces;
-using UVP.ExternalIntegration.Business.ResultMapper.Handlers;
 using UVP.ExternalIntegration.Business.ResultMapper.Interfaces;
 using UVP.ExternalIntegration.Business.ResultMapper.Services;
+using UVP.ExternalIntegration.Business.ResultMapper.Strategies;
 using UVP.ExternalIntegration.Business.Services;
 using UVP.ExternalIntegration.Repository.Interfaces;
 using UVP.ExternalIntegration.Repository.Repositories;
@@ -66,20 +66,22 @@ namespace UVP.ExternalIntegration.ApiHost.Extensions
             services.AddScoped<IModelLoaderService, ModelLoaderService>();
             services.AddScoped<IIntegrationOrchestrationService, IntegrationOrchestrationService>();
             services.AddScoped<IStatusPollingService, StatusPollingService>();
-
-            // =====================================
-            // Result Mapping Services
-            // =====================================
-            services.AddScoped<IResultMapperService, ResultMapperService>();
             services.AddScoped<IResultFieldExtractor, ResultFieldExtractor>();
-            services.AddScoped<IKeyMappingProvider, KeyMappingProvider>();
 
             // =====================================
-            // Integration-Specific Handlers
+            // Result Mapping - NEW STRATEGY PATTERN
             // =====================================
-            services.AddScoped<CmtsResultMappingHandler>();
-            services.AddScoped<EarthMedResultMappingHandler>();
-            services.AddScoped<IResultMappingHandlerFactory, IntegrationSystemHandlerFactory>();
+            // Register the unified mapper service
+            services.AddScoped<IResultMapperService, UnifiedResultMapperService>();
+
+            // Register individual strategies
+            services.AddScoped<CmtsResultMappingStrategy>();
+            services.AddScoped<EarthMedResultMappingStrategy>();
+            // Add new strategies here as they're created
+            // services.AddScoped<NewSystemResultMappingStrategy>();
+
+            // Register the strategy factory
+            services.AddScoped<IResultMappingStrategyFactory, ResultMappingStrategyFactory>();
 
             // =====================================
             // HTTP and Authentication Services

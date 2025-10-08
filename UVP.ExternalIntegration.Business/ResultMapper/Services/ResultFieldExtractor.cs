@@ -1,11 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
 using Serilog;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UVP.ExternalIntegration.Business.ResultMapper.DTOs;
 using UVP.ExternalIntegration.Business.ResultMapper.Interfaces;
 
 namespace UVP.ExternalIntegration.Business.ResultMapper.Services
@@ -229,5 +223,6 @@ namespace UVP.ExternalIntegration.Business.ResultMapper.Services
 
         private static DateTime? TryParseDate(string? s)
             => DateTime.TryParse(s, out var d) ? d : null;
+       
     }
 }

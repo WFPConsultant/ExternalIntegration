@@ -7,7 +7,6 @@ using UVP.ExternalIntegration.ApiHost.Extensions;
 using UVP.ExternalIntegration.ApiHost.Filters;
 using UVP.ExternalIntegration.ApiHost.Middleware;
 using UVP.ExternalIntegration.Business.Interfaces;
-using UVP.ExternalIntegration.Business.ResultMapper.Handlers;
 using UVP.ExternalIntegration.Business.ResultMapper.Interfaces;
 using UVP.ExternalIntegration.Business.ResultMapper.Services;
 using UVP.ExternalIntegration.Business.Services;
@@ -83,6 +82,7 @@ try
     builder.Services.AddScoped<IGenericRepository<User>, GenericRepository<User>>();
 
     builder.Services.AddScoped<IModelLoaderService, ModelLoaderService>();
+    builder.Services.AddScoped<IResultFieldExtractor,ResultFieldExtractor>();
 
     // =====================================
     // Business Services Registrations
@@ -94,30 +94,24 @@ try
     builder.Services.AddScoped<IInvocationManagerService, InvocationManagerService>();
     builder.Services.AddScoped<IIntegrationRunnerService, IntegrationRunnerService>();
     builder.Services.AddScoped<IRenderingEngineService, RenderingEngineService>();
-    builder.Services.AddScoped<IResultMapperService, ResultMapperService>();
     builder.Services.AddScoped<IIntegrationOrchestrationService, IntegrationOrchestrationService>();
 
     builder.Services.AddScoped<IKeyMappingProvider, KeyMappingProvider>();
 
 
-    // Register field extractor
-    builder.Services.AddScoped<IResultFieldExtractor, ResultFieldExtractor>();
+    
 
-    // Register all system handlers
-    builder.Services.AddScoped<CmtsResultMappingHandler>();
-    builder.Services.AddScoped<EarthMedResultMappingHandler>();
+    
 
     // Register factory
-    builder.Services.AddScoped<IResultMappingHandlerFactory, IntegrationSystemHandlerFactory>();
 
     builder.Services.AddScoped<ITokenService, TokenService>();
 
     // Register main service
-    builder.Services.AddScoped<IResultMapperService, ResultMapperService>();
+    //builder.Services.AddScoped<IResultMapperService, ResultMapperService>();
     // Add Memory Cache for token caching
     builder.Services.AddMemoryCache();
 
-   
 
     builder.Services.Configure<OAuthConfiguration>(
     builder.Configuration.GetSection("OAuth"));
