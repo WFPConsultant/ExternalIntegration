@@ -110,16 +110,17 @@ try
     // Register factory
     builder.Services.AddScoped<IResultMappingHandlerFactory, IntegrationSystemHandlerFactory>();
 
+    builder.Services.AddScoped<ITokenService, TokenService>();
+
     // Register main service
     builder.Services.AddScoped<IResultMapperService, ResultMapperService>();
     // Add Memory Cache for token caching
     builder.Services.AddMemoryCache();
 
-    // Add EARTHMED Token Service
-    builder.Services.AddScoped<IEarthMedTokenService, EarthMedTokenService>();
-    // Configure EarthMed settings
-    builder.Services.Configure<EarthMedConfiguration>(
-        builder.Configuration.GetSection("EarthMed"));
+   
+
+    builder.Services.Configure<OAuthConfiguration>(
+    builder.Configuration.GetSection("OAuth"));
 
 
     // HTTP Client Service with Polly

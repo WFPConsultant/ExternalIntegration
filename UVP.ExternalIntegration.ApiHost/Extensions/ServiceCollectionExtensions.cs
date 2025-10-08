@@ -13,41 +13,81 @@ namespace UVP.ExternalIntegration.ApiHost.Extensions
     {
         public static IServiceCollection AddIntegrationServices(this IServiceCollection services)
         {
-            // Register repositories
+            //// Register repositories
+            //services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+            //services.AddScoped<IIntegrationEndpointRepository, IntegrationEndpointRepository>();
+            //services.AddScoped<IIntegrationInvocationRepository, IntegrationInvocationRepository>();
+
+            //// Register services
+            //services.AddScoped<IInvocationManagerService, InvocationManagerService>();
+            //services.AddScoped<IRenderingEngineService, RenderingEngineService>();
+            //services.AddScoped<IIntegrationRunnerService, IntegrationRunnerService>();
+            //services.AddScoped<IResultMapperService, ResultMapperService>();
+            //// Add ModelLoaderService
+            //services.AddScoped<IModelLoaderService, ModelLoaderService>();
+
+            //// Register HTTP client
+            //services.AddHttpClient<IHttpConnectorService, HttpConnectorService>();
+
+            //services.AddScoped<IKeyMappingProvider, KeyMappingProvider>();
+
+
+            //// Register field extractor
+            //services.AddScoped<IResultFieldExtractor, ResultFieldExtractor>();
+
+            //// Register all system handlers
+            //services.AddScoped<CmtsResultMappingHandler>();
+            //services.AddScoped<EarthMedResultMappingHandler>();
+
+            //// Register factory
+            //services.AddScoped<IResultMappingHandlerFactory, IntegrationSystemHandlerFactory>();
+
+            //// Register main service
+            //services.AddScoped<IResultMapperService, ResultMapperService>();
+
+            //services.AddScoped<IStatusPollingService, StatusPollingService>();
+            //services.AddMemoryCache();
+            //services.AddScoped<IEarthMedTokenService, EarthMedTokenService>();
+            //return services;
+
+            // =====================================
+            // Repository Pattern
+            // =====================================
             services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IIntegrationEndpointRepository, IntegrationEndpointRepository>();
             services.AddScoped<IIntegrationInvocationRepository, IntegrationInvocationRepository>();
 
-            // Register services
+            // =====================================
+            // Core Integration Services
+            // =====================================
             services.AddScoped<IInvocationManagerService, InvocationManagerService>();
             services.AddScoped<IRenderingEngineService, RenderingEngineService>();
             services.AddScoped<IIntegrationRunnerService, IntegrationRunnerService>();
-            services.AddScoped<IResultMapperService, ResultMapperService>();
-            // Add ModelLoaderService
             services.AddScoped<IModelLoaderService, ModelLoaderService>();
+            services.AddScoped<IIntegrationOrchestrationService, IntegrationOrchestrationService>();
+            services.AddScoped<IStatusPollingService, StatusPollingService>();
 
-            // Register HTTP client
-            services.AddHttpClient<IHttpConnectorService, HttpConnectorService>();
-
+            // =====================================
+            // Result Mapping Services
+            // =====================================
+            services.AddScoped<IResultMapperService, ResultMapperService>();
+            services.AddScoped<IResultFieldExtractor, ResultFieldExtractor>();
             services.AddScoped<IKeyMappingProvider, KeyMappingProvider>();
 
-
-            // Register field extractor
-            services.AddScoped<IResultFieldExtractor, ResultFieldExtractor>();
-
-            // Register all system handlers
+            // =====================================
+            // Integration-Specific Handlers
+            // =====================================
             services.AddScoped<CmtsResultMappingHandler>();
             services.AddScoped<EarthMedResultMappingHandler>();
-
-            // Register factory
             services.AddScoped<IResultMappingHandlerFactory, IntegrationSystemHandlerFactory>();
 
-            // Register main service
-            services.AddScoped<IResultMapperService, ResultMapperService>();
-
-            services.AddScoped<IStatusPollingService, StatusPollingService>();
+            // =====================================
+            // HTTP and Authentication Services
+            // =====================================
+            services.AddHttpClient<IHttpConnectorService, HttpConnectorService>();
             services.AddMemoryCache();
-            services.AddScoped<IEarthMedTokenService, EarthMedTokenService>();
+            services.AddScoped<ITokenService, TokenService>();
+
             return services;
         }
     }
