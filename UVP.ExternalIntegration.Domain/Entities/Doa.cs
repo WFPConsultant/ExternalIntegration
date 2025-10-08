@@ -2,7 +2,7 @@
 {
     public class Doa
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string OrganizationMission { get; set; } = string.Empty;
         public string DutyStationCode { get; set; } = string.Empty;

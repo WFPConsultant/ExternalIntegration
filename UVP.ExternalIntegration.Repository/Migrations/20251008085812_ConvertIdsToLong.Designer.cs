@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UVP.ExternalIntegration.Repository.Context;
 
@@ -11,9 +12,11 @@ using UVP.ExternalIntegration.Repository.Context;
 namespace UVP.ExternalIntegration.Repository.Migrations
 {
     [DbContext(typeof(UVPDbContext))]
-    partial class UVPDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251008085812_ConvertIdsToLong")]
+    partial class ConvertIdsToLong
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -262,11 +265,11 @@ namespace UVP.ExternalIntegration.Repository.Migrations
 
             modelBuilder.Entity("UVP.ExternalIntegration.Domain.Entities.IntegrationEndpointConfiguration", b =>
                 {
-                    b.Property<long>("IntegrationEndpointId")
+                    b.Property<int>("IntegrationEndpointId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
+                        .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("IntegrationEndpointId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IntegrationEndpointId"));
 
                     b.Property<string>("BaseUrl")
                         .IsRequired()

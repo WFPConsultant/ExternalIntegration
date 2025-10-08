@@ -35,7 +35,7 @@ namespace UVP.ExternalIntegration.Business.Services
         /// NOTE: We DO NOT persist these IDs on the invocation row anymore.
         /// They are only used to build/log the first RequestPayload during the initial run.
         /// </summary>
-        public async Task<long> CreateInvocationAsync(int doaCandidateId, int candidateId, string integrationType)
+        public async Task<long> CreateInvocationAsync(long doaCandidateId, long candidateId, string integrationType)
         {
             var request = new IntegrationRequestDto
             {

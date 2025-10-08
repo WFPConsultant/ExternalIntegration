@@ -2,8 +2,8 @@
 {
     public class DoaCandidateClearances
     {
-        public int Id { get; set; }
-        public int DoaCandidateId { get; set; }
+        public long Id { get; set; }
+        public long DoaCandidateId { get; set; }
         public string RecruitmentClearanceCode { get; set; } = string.Empty;
         public DateTime RequestedDate { get; set; }
         public string StatusCode { get; set; } = string.Empty;

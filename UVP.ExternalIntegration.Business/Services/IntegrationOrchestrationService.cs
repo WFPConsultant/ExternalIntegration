@@ -24,7 +24,7 @@ namespace UVP.ExternalIntegration.Business.Services
             _clearancesRepo = clearancesRepo;
         }
 
-        public async Task<bool> ExecuteFullClearanceCycleAsync(int doaCandidateId, int candidateId, string integrationType)
+        public async Task<bool> ExecuteFullClearanceCycleAsync(long doaCandidateId, long candidateId, string integrationType)
         {
             try
             {
@@ -52,7 +52,7 @@ namespace UVP.ExternalIntegration.Business.Services
             }
         }
 
-        public async Task<bool> CheckAndProgressClearanceAsync(int doaCandidateId, int candidateId, string integrationType)
+        public async Task<bool> CheckAndProgressClearanceAsync(long doaCandidateId, long candidateId, string integrationType)
         {
             try
             {

@@ -2,10 +2,10 @@
 {
     public class DoaCandidateClearancesOneHR
     {
-        public int Id { get; set; }
-        public int DoaCandidateId { get; set; }
-        public int CandidateId { get; set; }
-        public int DoaId { get; set; }
+        public long Id { get; set; }
+        public long DoaCandidateId { get; set; }
+        public long CandidateId { get; set; }
+        public long DoaId { get; set; }
         public string? DoaCandidateClearanceId { get; set; }
         public string? RVCaseId { get; set; }
         public DateTime RequestedDate { get; set; }

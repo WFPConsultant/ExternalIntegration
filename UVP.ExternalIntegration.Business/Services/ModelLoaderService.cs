@@ -4,6 +4,7 @@ using System.Text.Json;
 using UVP.ExternalIntegration.Business.Interfaces;
 using UVP.ExternalIntegration.Domain.DTOs;
 using UVP.ExternalIntegration.Domain.Entities;
+using UVP.ExternalIntegration.Domain.Enums;
 using UVP.ExternalIntegration.Repository.Interfaces;
 
 namespace UVP.ExternalIntegration.Business.Services
@@ -131,12 +132,12 @@ namespace UVP.ExternalIntegration.Business.Services
             return keyBag;
         }
 
-        private async Task<(int doaCandidateId, int candidateId)> ResolveIdsAsync(
+        private async Task<(long doaCandidateId, long candidateId)> ResolveIdsAsync(
             Dictionary<string, object> keyBag,
             string integrationType)
         {
             // Check for integration-specific ID extraction patterns
-            if (integrationType.Equals("EARTHMED", StringComparison.OrdinalIgnoreCase))
+            if (integrationType.Equals(IntegrationType.EARTHMED.ToString(), StringComparison.OrdinalIgnoreCase))
             {
                 return await ExtractIdsFromReferenceNumberAsync(keyBag);
             }
@@ -159,20 +160,20 @@ namespace UVP.ExternalIntegration.Business.Services
             return await CrossReferenceIdsAsync(doaCandidateId, candidateId);
         }
 
-        private async Task<(int doaCandidateId, int candidateId)> ExtractIdsFromReferenceNumberAsync(
+        private async Task<(long doaCandidateId, long candidateId)> ExtractIdsFromReferenceNumberAsync(
             Dictionary<string, object> keyBag)
         {
             if (!TryGetFromBag(keyBag, "ReferenceNumber", out var refNumberObj) || refNumberObj == null)
             {
                 _logger.Warning("[EARTHMED] ReferenceNumber not found in payload");
-                return (0, 0);
+                return (0L, 0L);
             }
 
             var referenceNumber = refNumberObj.ToString();
             if (string.IsNullOrWhiteSpace(referenceNumber) || !referenceNumber.Contains("_"))
             {
                 _logger.Warning("[EARTHMED] Invalid ReferenceNumber format: {ReferenceNumber}", referenceNumber);
-                return (0, 0);
+                return (0L, 0L);
             }
 
             var parts = referenceNumber.Split('_');
@@ -181,7 +182,7 @@ namespace UVP.ExternalIntegration.Business.Services
                 !int.TryParse(parts[1], out var doaCandidateId))
             {
                 _logger.Warning("[EARTHMED] Failed to parse ReferenceNumber: {ReferenceNumber}", referenceNumber);
-                return (0, 0);
+                return (0L, 0L);
             }
 
             var doaCandidate = (await _doaCandidateRepo.FindAsync(x =>
@@ -192,7 +193,7 @@ namespace UVP.ExternalIntegration.Business.Services
             {
                 _logger.Warning("[EARTHMED] DoaCandidate not found for DoaId={DoaId}, DoaCandidateId={DoaCandidateId}",
                     doaId, doaCandidateId);
-                return (0, 0);
+                return (0L, 0L);
             }
 
             _logger.Information("[EARTHMED] Extracted: DoaId={DoaId}, DoaCandidateId={DoaCandidateId}, CandidateId={CandidateId}",
@@ -201,7 +202,7 @@ namespace UVP.ExternalIntegration.Business.Services
             return (doaCandidateId, doaCandidate.CandidateId);
         }
 
-        private async Task<(int doaCandidateId, int candidateId)> ResolveFromOneHRByIdAsync(Guid id)
+        private async Task<(long doaCandidateId, long candidateId)> ResolveFromOneHRByIdAsync(Guid id)
         {
             var oneHr = (await _clearancesOneHRRepo.FindAsync(x => x.DoaCandidateClearanceId == id.ToString()))
                 .FirstOrDefault();
@@ -212,12 +213,12 @@ namespace UVP.ExternalIntegration.Business.Services
                     .FirstOrDefault();
             }
 
-            return oneHr != null ? (oneHr.DoaCandidateId, oneHr.CandidateId) : (0, 0);
+            return oneHr != null ? ((long)oneHr.DoaCandidateId, (long)oneHr.CandidateId) : (0, 0);
         }
 
-        private async Task<(int doaCandidateId, int candidateId)> CrossReferenceIdsAsync(
-            int doaCandidateId,
-            int candidateId)
+        private async Task<(long doaCandidateId, long candidateId)> CrossReferenceIdsAsync(
+            long doaCandidateId,
+            long candidateId)
         {
             if (doaCandidateId != 0 && candidateId != 0)
                 return (doaCandidateId, candidateId);
@@ -244,7 +245,7 @@ namespace UVP.ExternalIntegration.Business.Services
             return (doaCandidateId, candidateId);
         }
 
-        private async Task<(int doaCandidateId, int candidateId)> ResolveIdsFromBootstrapAsync(
+        private async Task<(long doaCandidateId, long candidateId)> ResolveIdsFromBootstrapAsync(
             IntegrationRequestDto bootstrapRequest)
         {
             return await CrossReferenceIdsAsync(
@@ -252,7 +253,7 @@ namespace UVP.ExternalIntegration.Business.Services
                 bootstrapRequest.CandidateId);
         }
 
-        private async Task<object> BuildModelBundleAsync(string uvpDataModel, int doaCandidateId, int candidateId)
+        private async Task<object> BuildModelBundleAsync(string uvpDataModel, long doaCandidateId, long candidateId)
         {
             var modelNames = uvpDataModel.Split(',')
                 .Select(s => s.Trim())
@@ -280,7 +281,7 @@ namespace UVP.ExternalIntegration.Business.Services
             return result;
         }
 
-        private async Task<object?> LoadSpecificModelAsync(string modelName, int doaCandidateId, int candidateId)
+        private async Task<object?> LoadSpecificModelAsync(string modelName, long doaCandidateId, long candidateId)
         {
             return modelName switch
             {
@@ -304,7 +305,7 @@ namespace UVP.ExternalIntegration.Business.Services
             };
         }
 
-        private async Task<object?> LoadDoaModelAsync(int doaCandidateId)
+        private async Task<object?> LoadDoaModelAsync(long doaCandidateId)
         {
             var doaCandidateEntity = await _doaCandidateRepo.GetByIdAsync(doaCandidateId);
             if (doaCandidateEntity == null) return null;
@@ -324,7 +325,7 @@ namespace UVP.ExternalIntegration.Business.Services
             };
         }
 
-        private async Task<object?> LoadUserModelAsync(int candidateId)
+        private async Task<object?> LoadUserModelAsync(long candidateId)
         {
             var candidateEntity = await _candidateRepo.GetByIdAsync(candidateId);
             if (candidateEntity == null) return null;
@@ -365,14 +366,21 @@ namespace UVP.ExternalIntegration.Business.Services
             return false;
         }
 
-        private static int TryGetIntFromBag(IDictionary<string, object> bag, string key)
+        private static long TryGetIntFromBag(IDictionary<string, object> bag, string key)
         {
+            //if (TryGetFromBag(bag, key, out var v))
+            //{
+            //    if (v is int i) return i;
+            //    if (int.TryParse(v?.ToString(), out var n)) return n;
+            //}
+            //return 0;
             if (TryGetFromBag(bag, key, out var v))
             {
                 if (v is int i) return i;
-                if (int.TryParse(v?.ToString(), out var n)) return n;
+                if (v is long l) return l;  // Handle long values
+                if (long.TryParse(v?.ToString(), out var n)) return n;  // Changed to long.TryParse
             }
-            return 0;
+            return 0L;  // Use 0L for long literal
         }
 
         private static string? TryGetStringFromBag(IDictionary<string, object> bag, string key)

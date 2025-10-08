@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UVP.ExternalIntegration.Repository.Context;
 
@@ -11,9 +12,11 @@ using UVP.ExternalIntegration.Repository.Context;
 namespace UVP.ExternalIntegration.Repository.Migrations
 {
     [DbContext(typeof(UVPDbContext))]
-    partial class UVPDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251008092050_FixBigIntConfiguration")]
+    partial class FixBigIntConfiguration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

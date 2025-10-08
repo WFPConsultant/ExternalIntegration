@@ -2,7 +2,7 @@
 {
     public class Candidate
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public string FirstName { get; set; } = string.Empty;
         public string? MiddleName { get; set; }
         public string LastName { get; set; } = string.Empty;
@@ -14,6 +14,6 @@
         public DateTime DateOfBirth { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime? UpdatedDate { get; set; }
-        public int UserId { get; set; }
+        public long UserId { get; set; }
     }
 }
