@@ -282,14 +282,14 @@ namespace UVP.ExternalIntegration.Business.Services
 
             if(doaCandidateId==0 && candidateId==0)
             {
-                // For EARTHMED: extract from ReferenceNumber (format: DoaId_DoaCandidateId)
+                // For EARTHMED: extract from ReferenceNumber (format: DoaId_DoaCandidateId) for CMTS the logic would be different
                 var referenceNumber = _fieldExtractor.TryGetStringFromJsonAnyDepth(payload, "ReferenceNumber");
                 if (!string.IsNullOrWhiteSpace(referenceNumber) && referenceNumber.Contains("_"))
                 {
                     var parts = referenceNumber.Split('_');
                     if (parts.Length == 2 &&
-                        int.TryParse(parts[0], out var doaId) &&
-                        int.TryParse(parts[1], out var doaCanId))
+                        long.TryParse(parts[0], out var doaId) &&
+                        long.TryParse(parts[1], out var doaCanId))
                     {
 
                         // For EARTHMED, we need to get CandidateId from DoaCandidateClearancesOneHR

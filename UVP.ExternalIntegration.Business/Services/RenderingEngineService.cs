@@ -173,7 +173,7 @@ namespace UVP.ExternalIntegration.Business.Services
                 }
 
                 // Extract candidate-specific info
-                string indexNumber = GetPropertyValue<string>(candidateModel, "IndexNumber") ?? string.Empty;
+                string indexNumber = GetPropertyValue<string>(candidateModel, "Id") ?? string.Empty;
                 string employeeType = GetPropertyValue<string>(candidateModel, "EmployeeType") ?? "NVOL";
                 string occupationGroup = GetPropertyValue<string>(candidateModel, "OccupationGroup") ?? string.Empty;
                 string functionalTitleCode = GetPropertyValue<string>(candidateModel, "FunctionalTitleCode") ?? string.Empty;
@@ -290,6 +290,7 @@ namespace UVP.ExternalIntegration.Business.Services
             }
 
             // Add specific aliases that template expects
+            //candidateDict["IndexNumber"] = indexNumber;
             candidateDict["firstName"] = firstName;
             candidateDict["lastName"] = lastName;
             candidateDict["middleName"] = middleName;
